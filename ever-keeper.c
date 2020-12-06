@@ -5,11 +5,11 @@ char* Target;
 
 int isdir(char* path){
 	struct stat *file_data;
-	if (lstat(path, &file_data)<0){
+	if (lstat(path, file_data)<0){
 		printf("couldnot get file type: %s", path);
 		return -2;
 	}
-	if (S_ISDIR(file_data.st_mode))
+	if (S_ISDIR(file_data->st_mode))
 		return 1;
 	else
 		return 0;
@@ -42,7 +42,7 @@ int makedir(char* path){
 					break;
 				}
 			}
-			if (makedir(path, 0666)<0)
+			if (makedir(path)<0)
 				return -1;
 			path[strlen(path)]='/';
 			if ((res=mkdir(path, 0666))<0)
@@ -57,20 +57,20 @@ int makedir(char* path){
 	return 0;
 }
 
-int backup-file(char* source, size_t initlength){
+int backup_file(char* source, size_t initlength){
 	struct stat* datas;
 	struct stat datat;
-	char targetPath;
+	char* targetPath;
 	int i, fdf, fdt, res=0;
 	strcpy(targetPath, Target);
 	strcat(targetPath, ".gz");
-	for (i=strlen(targetPath), i>0; i--)
+	for (i=strlen(targetPath); i>0; i--)
 		if (targetPath[i]=='/'){
 			targetPath[i]=0;
 			break;
 		}
-	if (makeDir(targetPath)<0)
-		err(-1, "");
+	if (makedir(targetPath)<0)
+		exit(-1);
 	targetPath[strlen(targetPath)]='/';
 	if (source[strlen(source)-1]=='/')
 		source[strlen(source)-1]=0;
@@ -88,7 +88,7 @@ int backup-file(char* source, size_t initlength){
 		return -1;
 	}
 	targetPath[strlen(targetPath)-3]=0;
-	if (datas->st_mtim.tv_sec>datat->st_mtim.tv_sec){
+	if (datas->st_mtim.tv_sec>datat.st_mtim.tv_sec){
 		fdf = open(source, O_RDONLY);
 		fdt = open(targetPath, O_WRONLY|O_CREAT, 0666);
 		if ((res=sendfile(fdf, fdt, 0, datas->st_size))<0)
@@ -98,12 +98,12 @@ int backup-file(char* source, size_t initlength){
 		if (res<0)
 			return res;
 	}
-	if ((res=execvp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
+	if ((res=execlp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
 		warn("couldnot gzip file %s", targetPath);
 	return res;
 }
 
-int backup(size_t length, char* path, size_t initlength){
+int backup(char* path, size_t length, size_t initlength){
 	struct stat* data;
 	struct dirent* ent;
 	int res=lstat(path, data);
@@ -113,7 +113,7 @@ int backup(size_t length, char* path, size_t initlength){
 	if (res<0)
 		err(res, "wrong lstat");
 	if (!S_ISDIR(data->st_mode))
-		return backup-file(path, initlength);
+		return backup_file(path, initlength);
 	m = pathconf(path, _PC_NAME_MAX);
 	if (strlen(path)+m+2<length) {
 		length=strlen(path)+m+3;
@@ -138,9 +138,9 @@ int backup(size_t length, char* path, size_t initlength){
 	return 0;
 }
 
-int backup-init(char* t, char* s, size_t initlength){
-	char* path = palloc(&length);
+int backup_init(char* t, char* s, size_t initlength){
 	size_t length;
+	char* path = palloc(&length);
 	int times;
 	if (path == NULL)
 		err(-5, "wrong mem allocation");
@@ -167,6 +167,6 @@ int main(int argc, char** argv){
 	if (initial[strlen(initial)-1]=='/')
 		initial[strlen(initial)-1]=0;
 	Target = t;
-	backup-init(t, initial, strlen(initial));
+	backup_init(t, initial, strlen(initial));
 	return 0;
 }

@@ -11,16 +11,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#define PATH_MAX_HOPE 1024
 
 #ifdef PATH_MAX
 long pathmax = PATH_MAX;
 #else
 long pathmax = 0;
 #endif
-
-
-
-#define MAX_PATH_HOPE 1024
 
 char* palloc(size_t*);
 
