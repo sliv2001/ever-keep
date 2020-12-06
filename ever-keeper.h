@@ -1,12 +1,16 @@
 #ifndef EVER_KEEPER_H
 #define EVER_KEEPER_H
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <err.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef PATH_MAX
 long pathmax = PATH_MAX;
