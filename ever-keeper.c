@@ -1,15 +1,17 @@
 #include "ever-keeper.h"
 
+/*TODO Except Target overflow */
+
 /*содержит слэш!*/
 char* Target;
 
 int isdir(char* path){
-	struct stat *file_data;
-	if (lstat(path, file_data)<0){
+	struct stat file_data;
+	if (lstat(path, &file_data)<0){
 		printf("couldnot get file type: %s", path);
 		return -2;
 	}
-	if (S_ISDIR(file_data->st_mode))
+	if (S_ISDIR(file_data.st_mode))
 		return 1;
 	else
 		return 0;
@@ -34,7 +36,7 @@ char* palloc(size_t* size){
 /*без слэша!*/
 int makedir(char* path){
 	int i, res;
-	if (mkdir(path, 0666)<0){
+	if (mkdir(path, 0777)<0){
 		if (errno == ENOENT){
 			for (i = strlen(path); i>0; i--){
 				if (path[i]=='/'){
@@ -45,7 +47,7 @@ int makedir(char* path){
 			if (makedir(path)<0)
 				return -1;
 			path[strlen(path)]='/';
-			if ((res=mkdir(path, 0666))<0)
+			if ((res=mkdir(path, 0777))<0)
 				err(res, "couldnot make dir %s", path);
 			return 0;
 		}
@@ -58,11 +60,14 @@ int makedir(char* path){
 }
 
 int backup_file(char* source, size_t initlength){
-	struct stat* datas;
+	struct stat datas;
 	struct stat datat;
-	char* targetPath;
+	char* targetPath=palloc(NULL);
 	int i, fdf, fdt, res=0;
 	strcpy(targetPath, Target);
+	if (source[strlen(source)-1]=='/')
+		source[strlen(source)-1]=0;
+	strcat(targetPath, &source[initlength+1]);
 	strcat(targetPath, ".gz");
 	for (i=strlen(targetPath); i>0; i--)
 		if (targetPath[i]=='/'){
@@ -72,9 +77,6 @@ int backup_file(char* source, size_t initlength){
 	if (makedir(targetPath)<0)
 		exit(-1);
 	targetPath[strlen(targetPath)]='/';
-	if (source[strlen(source)-1]=='/')
-		source[strlen(source)-1]=0;
-	strcat(targetPath, &source[initlength+1]);
 	if (lstat(targetPath, &datat)<0){
 		if (errno==ENOENT)
 			datat.st_mtim.tv_sec = 0;
@@ -83,39 +85,47 @@ int backup_file(char* source, size_t initlength){
 			return -1;
 		}
 	}
-	if (lstat(source, datas)<0){
+	if (lstat(source, &datas)<0){
 		warn("couldnot get data on file %s", source);
 		return -1;
 	}
 	targetPath[strlen(targetPath)-3]=0;
-	if (datas->st_mtim.tv_sec>datat.st_mtim.tv_sec){
-		fdf = open(source, O_RDONLY);
-		fdt = open(targetPath, O_WRONLY|O_CREAT, 0666);
-		if ((res=sendfile(fdf, fdt, 0, datas->st_size))<0)
+	if (datas.st_mtim.tv_sec>datat.st_mtim.tv_sec){
+		if ((fdf = open(source, O_RDWR))<0){
+			warn("Couldnot open source file %s", source);
+			res=-1;
+		}
+		if ((fdt = open(targetPath, O_RDWR|O_CREAT, 0666))<0){
+			warn("Couldnot open target file %s", targetPath);
+			res = -1;
+		}
+		if ((res=sendfile(fdf, fdt, 0, datas.st_size))<0)
 			warn("couldnot copy data from %s to%s", source, targetPath);
 		close(fdf);
 		close(fdt);
 		if (res<0)
 			return res;
+		if (fork()==0){
+			if ((execlp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
+				warn("couldnot gzip file %s", targetPath);
+		}
 	}
-	if ((res=execlp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
-		warn("couldnot gzip file %s", targetPath);
 	return res;
 }
 
 int backup(char* path, size_t length, size_t initlength){
-	struct stat* data;
+	struct stat data;
 	struct dirent* ent;
-	int res=lstat(path, data);
+	int res=lstat(path, &data);
 	int m, n;
 	char* new_path;
 	DIR* dir;
 	if (res<0)
 		err(res, "wrong lstat");
-	if (!S_ISDIR(data->st_mode))
+	if (!S_ISDIR(data.st_mode))
 		return backup_file(path, initlength);
 	m = pathconf(path, _PC_NAME_MAX);
-	if (strlen(path)+m+2<length) {
+	if (strlen(path)+m+2>length) {
 		length=strlen(path)+m+3;
 		if (realloc(path, length)==NULL)
 			err(-1, "wrong realloc");
@@ -142,6 +152,12 @@ int backup_init(char* t, char* s, size_t initlength){
 	size_t length;
 	char* path = palloc(&length);
 	int times;
+	if (t[strlen(t)-1]!='/'){
+		t[strlen(t)]='/';
+		t[strlen(t)+1]=0;
+	}
+	Target = palloc(NULL);
+	strcpy(Target, t);
 	if (path == NULL)
 		err(-5, "wrong mem allocation");
 	if ((times=strlen(s)/length+1)>1){
@@ -154,19 +170,20 @@ int backup_init(char* t, char* s, size_t initlength){
 }
 
 int main(int argc, char** argv){
-	char* t = argv[2];
-	char* initial = argv[1];
+	char* t = palloc(NULL);
+	char* initial = palloc(NULL);
+	size_t i;
+	strcpy(t, argv[2]);
+	strcpy(initial, argv[1]);
+	if (t==NULL||initial==0)
+		err(-1, "wrong mem allocation");
 	if (argc!=3){
 		printf("wrong daemon args");
 		return -1;
 	}
-		if (t[strlen(t)-1]!='/'){
-		t[strlen(t)]='/';
-		t[strlen(t)+1]=0;
-	}
 	if (initial[strlen(initial)-1]=='/')
-		initial[strlen(initial)-1]=0;
-	Target = t;
-	backup_init(t, initial, strlen(initial));
+		initial[strlen(initial)-1]='\0';
+	i = strlen(initial);
+	backup_init(t, initial, i);
 	return 0;
 }
