@@ -177,7 +177,7 @@ int backup_init(char* t, char* s, size_t initlength){
 
 int main(int argc, char** argv){
 	char* t = palloc(NULL);
-	int log = open("logfile", O_WRONLY|O_CREAT|O_SYNC, 0666);
+	int log = open("logfile", O_WRONLY|O_CREAT|O_SYNC|O_TRUNC, 0666);
 	time_t prev = 0;
 	char* initial = palloc(NULL);
 	size_t i;
