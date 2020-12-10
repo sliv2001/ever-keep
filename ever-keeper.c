@@ -139,6 +139,8 @@ int backup(char* path, size_t length, size_t initlength){
 	n=strlen(path);
 	path[n]='/';
 	path[n+1]=0;
+	if (!strcmp(Target, path))
+		return 0;
 	while ((ent=readdir(dir))!=NULL){
 		if (strcmp(".", ent->d_name)==0||strcmp("..", ent->d_name)==0)
 			continue;
@@ -173,7 +175,7 @@ int backup_init(char* t, char* s, size_t initlength){
 
 int main(int argc, char** argv){
 	char* t = palloc(NULL);
-	time_t prev = time(NULL);
+	time_t prev = 0;
 	char* initial = palloc(NULL);
 	size_t i;
 	strcpy(t, argv[2]);
@@ -188,8 +190,10 @@ int main(int argc, char** argv){
 		initial[strlen(initial)-1]='\0';
 	i = strlen(initial);
 	while (1)
-		if (time(NULL)>prev+60)
+		if (time(NULL)>prev+60){
+			prev = time(NULL);
 			backup_init(t, initial, i);
+		}
 		else
 			sleep(60);
 	return 0;
