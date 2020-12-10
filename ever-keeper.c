@@ -175,6 +175,21 @@ int backup_init(char* t, char* s, size_t initlength){
 	return backup(path, length, initlength);
 }
 
+void daemonize(){
+	pid_t pid;
+	umask(0);
+	if ((pid=fork())>0)
+		exit(0);
+	if (pid<0)
+		err(-1, "Daemonization failure");
+	setsid();
+	if ((pid=fork())>0)
+		exit(0);
+	if (pid<0)
+		err(-1, "Daemonization failure");
+	chdir("/");
+}
+
 int main(int argc, char** argv){
 	char* t = palloc(NULL);
 	int log = open("logfile", O_WRONLY|O_CREAT|O_SYNC|O_TRUNC, 0666);
