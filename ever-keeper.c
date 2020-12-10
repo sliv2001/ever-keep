@@ -139,8 +139,10 @@ int backup(char* path, size_t length, size_t initlength){
 	n=strlen(path);
 	path[n]='/';
 	path[n+1]=0;
-	if (!strcmp(Target, path))
+	if (!strcmp(Target, path)){
+		warnx("Skipping backup folder");
 		return 0;
+	}
 	while ((ent=readdir(dir))!=NULL){
 		if (strcmp(".", ent->d_name)==0||strcmp("..", ent->d_name)==0)
 			continue;
@@ -170,14 +172,16 @@ int backup_init(char* t, char* s, size_t initlength){
 			err(-6, "wrong mem reallocation");
 	}
 	strcpy(path, s);
-	backup(path, length, initlength);
+	return backup(path, length, initlength);
 }
 
 int main(int argc, char** argv){
 	char* t = palloc(NULL);
+	int log = open("logfile", O_WRONLY|O_CREAT|O_SYNC, 0666);
 	time_t prev = 0;
 	char* initial = palloc(NULL);
 	size_t i;
+	dup2(log, STDERR_FILENO);
 	strcpy(t, argv[2]);
 	strcpy(initial, argv[1]);
 	if (t==NULL||initial==0)
