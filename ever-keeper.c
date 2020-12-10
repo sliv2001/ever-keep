@@ -97,7 +97,7 @@ int backup_file(char* source, size_t initlength){
 			warn("Couldnot open target file %s", targetPath);
 			res = -1;
 		}
-		if ((res=sendfile(fdf, fdt, 0, datas.st_size))<0){
+		if ((res=sendfile(fdt, fdf, NULL, datas.st_size))<0){
 			warn("couldnot copy data from %s to%s", source, targetPath);
 			res=-1;
 		}
@@ -197,6 +197,7 @@ int main(int argc, char** argv){
 	char* initial = palloc(NULL);
 	size_t i;
 	dup2(log, STDERR_FILENO);
+	daemonize();
 	strcpy(t, argv[2]);
 	strcpy(initial, argv[1]);
 	if (t==NULL||initial==0)
