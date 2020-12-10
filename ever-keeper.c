@@ -173,6 +173,7 @@ int backup_init(char* t, char* s, size_t initlength){
 
 int main(int argc, char** argv){
 	char* t = palloc(NULL);
+	time_t prev = time(NULL);
 	char* initial = palloc(NULL);
 	size_t i;
 	strcpy(t, argv[2]);
@@ -186,6 +187,10 @@ int main(int argc, char** argv){
 	if (initial[strlen(initial)-1]=='/')
 		initial[strlen(initial)-1]='\0';
 	i = strlen(initial);
-	backup_init(t, initial, i);
+	while (1)
+		if (time(NULL)>prev+60)
+			backup_init(t, initial, i);
+		else
+			sleep(60);
 	return 0;
 }

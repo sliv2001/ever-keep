@@ -15,6 +15,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/sendfile.h>
+#include <time.h>
 
 #define PATH_MAX_HOPE 1024
 
