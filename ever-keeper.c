@@ -1,7 +1,5 @@
 #include "ever-keeper.h"
 
-/*TODO Except Target overflow */
-
 /*содержит слэш!*/
 char* Target;
 
@@ -99,12 +97,16 @@ int backup_file(char* source, size_t initlength){
 			warn("Couldnot open target file %s", targetPath);
 			res = -1;
 		}
-		if ((res=sendfile(fdf, fdt, 0, datas.st_size))<0)
+		if ((res=sendfile(fdf, fdt, 0, datas.st_size))<0){
 			warn("couldnot copy data from %s to%s", source, targetPath);
+			res=-1;
+		}
 		close(fdf);
 		close(fdt);
-		if (res<0)
+		if (res<0){
+			unlink(targetPath);
 			return res;
+		}
 		if (fork()==0){
 			if ((execlp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
 				warn("couldnot gzip file %s", targetPath);
