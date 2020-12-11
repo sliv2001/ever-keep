@@ -6,13 +6,13 @@ int Link;
 
 int getStat(char* path, struct stat* data){
 	if (Link)
-		return lstat(path, data);
+		return getStat(path, data);
 	return stat(path, data);
 }
 
 int isdir(char* path){
 	struct stat file_data;
-	if (lstat(path, &file_data)<0){
+	if (getStat(path, &file_data)<0){
 		printf("couldnot get file type: %s", path);
 		return -2;
 	}
@@ -93,7 +93,7 @@ int backup_file(char* source, size_t initlength){
 	if (makedir(targetPath)<0)
 		exit(-1);
 	targetPath[strlen(targetPath)]='/';
-	if (lstat(targetPath, &datat)<0){
+	if (getStat(targetPath, &datat)<0){
 		if (errno==ENOENT)
 			datat.st_mtim.tv_sec = 0;
 		else{
@@ -101,7 +101,7 @@ int backup_file(char* source, size_t initlength){
 			return -1;
 		}
 	}
-	if (lstat(source, &datas)<0){
+	if (getStat(source, &datas)<0){
 		warn("couldnot get data on file %s", source);
 		return -1;
 	}
@@ -137,12 +137,12 @@ int backup_file(char* source, size_t initlength){
 int backup(char* path, size_t length, size_t initlength){
 	struct stat data;
 	struct dirent* ent;
-	int res=lstat(path, &data);
+	int res=getStat(path, &data);
 	int m, n;
 	char* new_path;
 	DIR* dir;
 	if (res<0)
-		err(res, "wrong lstat");
+		err(res, "wrong getStat");
 	if (!S_ISDIR(data.st_mode))
 		return backup_file(path, initlength);
 	m = pathconf(path, _PC_NAME_MAX);
@@ -239,10 +239,6 @@ int main(int argc, char** argv){
 #endif
 	if (t==NULL||initial==0)
 		err(-1, "wrong mem allocation");
-	if (argc!=3){
-		printf("wrong daemon args");
-		return -1;
-	}
 	if (initial[strlen(initial)-1]=='/')
 		initial[strlen(initial)-1]='\0';
 	i = strlen(initial);
