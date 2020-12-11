@@ -197,7 +197,9 @@ int main(int argc, char** argv){
 	char* initial = palloc(NULL);
 	size_t i;
 	dup2(log, STDERR_FILENO);
+#ifdef DAEMON
 	daemonize();
+#endif
 	strcpy(t, argv[2]);
 	strcpy(initial, argv[1]);
 	if (t==NULL||initial==0)
