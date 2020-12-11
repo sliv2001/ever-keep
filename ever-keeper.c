@@ -210,13 +210,13 @@ int main(int argc, char** argv){
 	char* initial = palloc(&lenin);
 	size_t i;
 	dup2(log, STDERR_FILENO);
-#ifdef DAEMON
-	daemonize();
-#endif
 	strcpy(t, argv[2]);
 	strcpy(initial, argv[1]);
 	t = getabs(t, lent);
 	initial = getabs(initial, lenin);
+#ifdef DAEMON
+	daemonize();
+#endif
 	if (t==NULL||initial==0)
 		err(-1, "wrong mem allocation");
 	if (argc!=3){
