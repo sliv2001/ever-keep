@@ -121,6 +121,7 @@ int backup_file(char* source, size_t initlength){
 		if (fork()==0){
 			if ((execlp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
 				warn("couldnot gzip file %s", targetPath);
+			return 0;
 		}
 	}
 	return res;
