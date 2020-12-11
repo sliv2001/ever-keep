@@ -46,6 +46,7 @@ char* palloc(size_t* size){
 	ptr = malloc(s);
 	if (size!=NULL)
 		*size = s;
+	ptr[0]=0;
 	return (char*)ptr;
 }
 
@@ -73,6 +74,44 @@ int makedir(char* path){
 
 	}
 	return 0;
+}
+
+int copy_file(char* source, char* targetPath, struct stat* datas,
+ struct stat* datat){
+	int fdf, fdt, res;
+	size_t blen;
+	char* buf = palloc(&blen);
+	if (Link&&S_ISLNK(datas->st_mode)){
+		blen = readlink(source, buf, blen);
+		buf[blen]=0;
+		if ((res=symlink(buf, targetPath))<0)
+			warn("Couldnot copy symlink %s to %s", source, targetPath);
+		return res;
+	}
+	if ((fdf = open(source, O_RDWR))<0){
+		warn("Couldnot open source file %s", source);
+		res=-1;
+	}
+	if ((fdt = open(targetPath, O_RDWR|O_CREAT, 0666))<0){
+		warn("Couldnot open target file %s", targetPath);
+		res = -1;
+	}
+	if ((res=sendfile(fdt, fdf, NULL, datas->st_size))<0){
+		warn("couldnot copy data from %s to%s", source, targetPath);
+		res=-1;
+	}
+	close(fdf);
+	close(fdt);
+	if (res<0){
+		unlink(targetPath);
+		return res;
+	}
+	if (fork()==0){
+		if ((execlp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
+			warn("couldnot gzip file %s", targetPath);
+		return 0;
+	}
+	return res;
 }
 
 int backup_file(char* source, size_t initlength){
@@ -107,29 +146,7 @@ int backup_file(char* source, size_t initlength){
 	}
 	targetPath[strlen(targetPath)-3]=0;
 	if (datas.st_mtim.tv_sec>datat.st_mtim.tv_sec){
-		if ((fdf = open(source, O_RDWR))<0){
-			warn("Couldnot open source file %s", source);
-			res=-1;
-		}
-		if ((fdt = open(targetPath, O_RDWR|O_CREAT, 0666))<0){
-			warn("Couldnot open target file %s", targetPath);
-			res = -1;
-		}
-		if ((res=sendfile(fdt, fdf, NULL, datas.st_size))<0){
-			warn("couldnot copy data from %s to%s", source, targetPath);
-			res=-1;
-		}
-		close(fdf);
-		close(fdt);
-		if (res<0){
-			unlink(targetPath);
-			return res;
-		}
-		if (fork()==0){
-			if ((execlp("gzip", "gzip", "--best", targetPath, (char*)0))<0)
-				warn("couldnot gzip file %s", targetPath);
-			return 0;
-		}
+		res = copy_file(source, targetPath, &datas, &datat);
 	}
 	return res;
 }
