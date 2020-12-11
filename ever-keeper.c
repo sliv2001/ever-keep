@@ -15,6 +15,17 @@ int isdir(char* path){
 		return 0;
 }
 
+char* getabs(char* buf, size_t len){
+	size_t l;
+	char* p = palloc(&l);
+	if (buf[0]!='.')
+		return buf;
+	strcpy(p, buf);
+	buf=getcwd(buf, len);
+	strcat(buf, &p[1]);
+	return buf;
+}
+
 char* palloc(size_t* size){
 	char *ptr;
 	size_t s;
@@ -191,10 +202,11 @@ void daemonize(){
 }
 
 int main(int argc, char** argv){
-	char* t = palloc(NULL);
+	size_t lenin, lent;
+	char* t = palloc(&lent);
 	int log = open("logfile", O_WRONLY|O_CREAT|O_SYNC|O_TRUNC, 0666);
 	time_t prev = 0;
-	char* initial = palloc(NULL);
+	char* initial = palloc(&lenin);
 	size_t i;
 	dup2(log, STDERR_FILENO);
 #ifdef DAEMON
@@ -202,6 +214,8 @@ int main(int argc, char** argv){
 #endif
 	strcpy(t, argv[2]);
 	strcpy(initial, argv[1]);
+	t = getabs(t, lent);
+	initial = getabs(initial, lenin);
 	if (t==NULL||initial==0)
 		err(-1, "wrong mem allocation");
 	if (argc!=3){
