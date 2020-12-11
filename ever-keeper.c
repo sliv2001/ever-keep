@@ -45,7 +45,7 @@ char* palloc(size_t* size){
 /*без слэша!*/
 int makedir(char* path){
 	int i, res;
-	if (mkdir(path, 0777)<0){
+	if (mkdir(path, 0775)<0){
 		if (errno == ENOENT){
 			for (i = strlen(path); i>0; i--){
 				if (path[i]=='/'){
@@ -56,7 +56,7 @@ int makedir(char* path){
 			if (makedir(path)<0)
 				return -1;
 			path[strlen(path)]='/';
-			if ((res=mkdir(path, 0777))<0)
+			if ((res=mkdir(path, 0775))<0)
 				err(res, "couldnot make dir %s", path);
 			return 0;
 		}
