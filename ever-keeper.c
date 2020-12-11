@@ -6,7 +6,7 @@ int Link;
 
 int getStat(char* path, struct stat* data){
 	if (Link)
-		return getStat(path, data);
+		return lstat(path, data);
 	return stat(path, data);
 }
 
