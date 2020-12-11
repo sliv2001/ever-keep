@@ -2,6 +2,13 @@
 
 /*содержит слэш!*/
 char* Target;
+int Link;
+
+int getStat(char* path, struct stat* data){
+	if (Link)
+		return lstat(path, data);
+	return stat(path, data);
+}
 
 int isdir(char* path){
 	struct stat file_data;
@@ -202,6 +209,20 @@ void daemonize(){
 	chdir("/");
 }
 
+int parse(int argc, char** argv, char* initial, char* t){
+	int res=0;
+	if (argc<3||argc>4)
+		errx(-1, "wrong args");
+	if (!strcmp(argv[1], "--link"))
+		res = 1;
+	else
+		if (argc==4)
+			errx(-1, "wrong args");
+	strcpy(initial, argv[1+res]);
+	strcpy(t, argv[2+res]);
+	return res;
+}
+
 int main(int argc, char** argv){
 	size_t lenin, lent;
 	char* t = palloc(&lent);
@@ -210,8 +231,7 @@ int main(int argc, char** argv){
 	char* initial = palloc(&lenin);
 	size_t i;
 	dup2(log, STDERR_FILENO);
-	strcpy(t, argv[2]);
-	strcpy(initial, argv[1]);
+	Link = parse(argc, argv, initial, t);
 	t = getabs(t, lent);
 	initial = getabs(initial, lenin);
 #ifdef DAEMON
